@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hlandau/acmeapi/acmeutils"
 	denet "github.com/hlandau/goutils/net"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -15,57 +17,34 @@ type postAccount struct {
 	TermsOfServiceAgreed bool          `json:"termsOfServiceAgreed,omitempty"`
 	ContactURIs          []string      `json:"contact,omitempty"`
 	Status               AccountStatus `json:"status,omitempty"`
+	OnlyReturnExisting   bool          `json:"onlyReturnExisting,omitempty"`
 }
 
-// Registers a new account or modifies an existing one. If acct.URL is set,
-// then that account is updated, and the operation fails if the account does
-// not exist. If acct.URL is not set, the account key is registered (if it has
-// not already been) or updated (if it has) and in either case the account URL
-// is discovered and set in acct.URL. In either case, the contents of the
-// account object returned by the server is loaded into the fields of acct.
-//
-// The only fields of acct used for requests (that is, the only fields of an
-// account modifiable by the client) are the ContactURIs and the Status field.
-// The Status field is only sent if it is set to AccountDeactivated
-// ("deactivated"); no other transition can be manually requested by the
-// client.
-//
-// Terms of Service assent is not based on the TermsOfServiceAgreed field of
-// acct, which is updated by responses but ignored when making requests.
-// Instead, pass the set of strings acceptableTermsOfServiceURIs and ensure
-// that the URI expressed in the directory metadata is set within it. This is
-// not necessary if it is certain the account already exists (for example, if
-// acct.URL is set).
-func (c *RealmClient) UpsertAccount(ctx context.Context, acct *Account, acceptableTermsOfServiceURIs map[string]struct{}) error {
-	di, err := c.getDirectory(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Determine whether we need to get the registration URI.
-	endp := acct.URL
-	expectCode := updateAccountCodes
-	updating := true
+func (c *RealmClient) postAccount(ctx context.Context, acct *Account, onlyReturnExisting bool) error {
 	postAcct := &postAccount{
-		ContactURIs: acct.ContactURIs,
+		ContactURIs:          acct.ContactURIs,
+		TermsOfServiceAgreed: acct.TermsOfServiceAgreed,
+		OnlyReturnExisting:   onlyReturnExisting,
 	}
 	if acct.Status == AccountDeactivated {
 		postAcct.Status = acct.Status
 	}
 
+	endp := acct.URL
+	expectCode := updateAccountCodes
+	updating := true
+
 	if endp == "" {
+		di, err := c.getDirectory(ctx)
+		if err != nil {
+			return err
+		}
+
 		endp = di.NewAccount
 		expectCode = newAccountCodes
 		updating = false
-
-		if di.Meta.TermsOfServiceURL != "" {
-			if _, ok := acceptableTermsOfServiceURIs[di.Meta.TermsOfServiceURL]; ok {
-				postAcct.TermsOfServiceAgreed = true
-			}
-		}
 	}
 
-	// Make request.
 	acctU := acct
 	if !updating {
 		acctU = nil
@@ -81,21 +60,57 @@ func (c *RealmClient) UpsertAccount(ctx context.Context, acct *Account, acceptab
 			return err
 		}
 
-		return fmt.Errorf("unexpected status code: %d: %v", res.StatusCode, endp)
+		return fmt.Errorf("unexpected status code: %d: %q", res.StatusCode, endp)
 	}
 
 	loc := res.Header.Get("Location")
-	if loc != "" && updating {
-		// Updating existing account, so we already have the URL and shouldn't be
-		// redirected anywhere.
-		return fmt.Errorf("unexpected Location header: %q", loc)
+	if !updating {
+		if !ValidURL(loc) {
+			return fmt.Errorf("invalid URL: %q", loc)
+		}
+		acct.URL = loc
+	} else {
+		if loc != "" {
+			return fmt.Errorf("unexpected Location header: %q", loc)
+		}
 	}
 
-	if !ValidURL(loc) {
-		return fmt.Errorf("invalid URL: %q", loc)
-	}
-	acct.URL = loc
 	return nil
+}
+
+func (c *RealmClient) registerAccount(ctx context.Context, acct *Account, onlyReturnExisting bool) error {
+	if acct.URL != "" {
+		return fmt.Errorf("cannot register account which already has an URL")
+	}
+
+	return c.postAccount(ctx, acct, onlyReturnExisting)
+}
+
+// Registers a new account. acct.URL must be empty and TermsOfServiceAgreed must
+// be true.
+//
+// The only fields of acct used for requests (that is, the only fields of an
+// account modifiable by the client) are the ContactURIs field, the
+// TermsOfServiceAgreed field and the Status field. The Status field is only sent
+// if it is set to AccountDeactivated ("deactivated"); no other transition can be
+// manually requested by the client.
+func (c *RealmClient) RegisterAccount(ctx context.Context, acct *Account) error {
+	return c.registerAccount(ctx, acct, false)
+}
+
+// Tries to find an existing account by key if the URL is not yet known.
+// acct.URL must be empty. Fails if the account does not exist.
+func (c *RealmClient) LocateAccount(ctx context.Context, acct *Account) error {
+	return c.registerAccount(ctx, acct, true)
+}
+
+// Updates an existing account. acct.URL must be set.
+func (c *RealmClient) UpdateAccount(ctx context.Context, acct *Account) error {
+	if acct.URL == "" {
+		return fmt.Errorf("cannot update account for which URL is unknown")
+	}
+
+	return c.postAccount(ctx, acct, false)
 }
 
 var newAccountCodes = []int{201 /* Created */, 200 /* OK */}
@@ -282,6 +297,43 @@ func (c *RealmClient) WaitForOrder(ctx context.Context, acct *Account, order *Or
 			return err
 		}
 	}
+}
+
+func (c *RealmClient) LoadCertificate(ctx context.Context, cert *Certificate) error {
+	// Check input.
+	if !ValidURL(cert.URL) {
+		return fmt.Errorf("invalid request URL: %q", cert.URL)
+	}
+
+	// Make request.
+	req, err := http.NewRequest("GET", cert.URL, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Accept", "application/pem-certificate-chain")
+
+	res, err := c.doReqServer(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+	if res.Header.Get("Content-Type") != "application/pem-certificate-chain" {
+		return fmt.Errorf("response was not a PEM certificate chain")
+	}
+
+	b, err := ioutil.ReadAll(denet.LimitReader(res.Body, 512*1024))
+	if err != nil {
+		return err
+	}
+
+	cert.CertificateChain, err = acmeutils.LoadCertificates(b)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type finalizeReq struct {

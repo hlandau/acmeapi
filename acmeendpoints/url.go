@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/hlandau/acme/acmeapi"
+	"github.com/hlandau/acmeapi"
 	"github.com/hlandau/xlog"
 	"golang.org/x/net/context"
 	"net/url"
@@ -126,7 +126,7 @@ func CertificateToEndpoints(cert *x509.Certificate) (endp []*Endpoint, certain b
 }
 
 // Given a certificate, tries to determine the certificate URL and definite endpoint.
-func CertificateToEndpointURL(cl *acmeapi.Client, cert *x509.Certificate, ctx context.Context) (*Endpoint, string, error) {
+func CertificateToEndpointURL(cl *acmeapi.RealmClient, cert *x509.Certificate, ctx context.Context) (*Endpoint, string, error) {
 	es, certain, err := CertificateToEndpoints(cert)
 	if err != nil {
 		return nil, "", err
@@ -149,16 +149,16 @@ func CertificateToEndpointURL(cl *acmeapi.Client, cert *x509.Certificate, ctx co
 		if !certain {
 			// Check that this is the right endpoint via an HTTP request.
 			acrt := acmeapi.Certificate{
-				URI: u,
+				URL: u,
 			}
 
-			err := cl.LoadCertificate(&acrt, ctx)
+			err := cl.LoadCertificate(ctx, &acrt)
 			if err != nil {
 				continue
 			}
 
 			// check that the certificate DER matches
-			if !bytes.Equal(acrt.Certificate, cert.Raw) {
+			if len(acrt.CertificateChain) < 1 || !bytes.Equal(acrt.CertificateChain[0], cert.Raw) {
 				continue
 			}
 		}
@@ -170,7 +170,7 @@ func CertificateToEndpointURL(cl *acmeapi.Client, cert *x509.Certificate, ctx co
 }
 
 // Given a certificate, tries to determine the definite endpoint.
-func CertificateToEndpoint(cl *acmeapi.Client, cert *x509.Certificate, ctx context.Context) (*Endpoint, error) {
+func CertificateToEndpoint(cl *acmeapi.RealmClient, cert *x509.Certificate, ctx context.Context) (*Endpoint, error) {
 	e, _, err := CertificateToEndpointURL(cl, cert, ctx)
 	return e, err
 }

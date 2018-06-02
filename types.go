@@ -457,9 +457,4 @@ type Certificate struct {
 	// Does not generally include the root certificate. If you need it (e.g.
 	// because you are using DANE) you must append it yourself.
 	CertificateChain [][]byte `json:"-"`
-
-	// An URL from which the root certificate can be obtained. This is the
-	// certificate in the chain which comes after the last certificate in
-	// CertificateChain, and it usually should not be sent by TLS servers.
-	RootCertificateURL string `json:"-"`
 }

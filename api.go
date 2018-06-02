@@ -417,6 +417,32 @@ func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Accou
 		req.Header.Set("Content-Type", "application/jose+json")
 	}
 
+	res, err := c.doReqServer(ctx, req)
+	if err != nil {
+		return res, err
+	}
+
+	// Otherwise, if we are expecting response data, unmarshal into the provided
+	// struct.
+	if responseData != nil {
+		defer res.Body.Close()
+
+		if ct := res.Header.Get("Content-Type"); ct != "application/json" {
+			return res, fmt.Errorf("unexpected response content type: %q", ct)
+		}
+
+		err = json.NewDecoder(res.Body).Decode(responseData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Done.
+	return res, nil
+}
+
+// Make an HTTP request to an ACME endpoint.
+func (c *RealmClient) doReqServer(ctx context.Context, req *http.Request) (*http.Response, error) {
 	res, err := c.doReqActual(ctx, req)
 	if err != nil {
 		return nil, err
@@ -450,23 +476,7 @@ func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Accou
 		return res, newHTTPError(res)
 	}
 
-	// Otherwise, if we are expecting response data, unmarshal into the provided
-	// struct.
-	if responseData != nil {
-		defer res.Body.Close()
-
-		if ct := res.Header.Get("Content-Type"); ct != "application/json" {
-			return res, fmt.Errorf("unexpected response content type: %q", ct)
-		}
-
-		err = json.NewDecoder(res.Body).Decode(responseData)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Done.
-	return res, nil
+	return res, err
 }
 
 // Make an HTTP request. This is used by doReq and can also be used for

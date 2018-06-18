@@ -30,6 +30,16 @@ func (he *HTTPError) Error() string {
 	return fmt.Sprintf("HTTP error: %v\n%v\n%v", he.Res.Status, he.Res.Header, he.ProblemRaw)
 }
 
+func (he *HTTPError) Temporary() bool {
+	switch he.Res.StatusCode {
+	case 202, 408, 500, 502, 503, 504:
+		return true
+
+	default:
+		return false
+	}
+}
+
 func newHTTPError(res *http.Response) error {
 	defer res.Body.Close()
 

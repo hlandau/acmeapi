@@ -260,8 +260,8 @@ func (c *RealmClient) NewOrder(ctx context.Context, acct *Account, order *Order)
 //
 // You can load an order from its URI by creating an Order with the URI set and
 // then calling this.
-func (c *RealmClient) LoadOrder(ctx context.Context, acct *Account, order *Order) error {
-	res, err := c.doReq(ctx, "GET", order.URL, acct, nil, nil, order)
+func (c *RealmClient) LoadOrder(ctx context.Context, order *Order) error {
+	res, err := c.doReq(ctx, "GET", order.URL, nil, nil, nil, order)
 	if err != nil {
 		return err
 	}
@@ -280,25 +280,25 @@ func (c *RealmClient) LoadOrder(ctx context.Context, acct *Account, order *Order
 //
 // The retry delay will not work if you recreate the object; use the same Challenge
 // struct between calls.
-func (c *RealmClient) WaitLoadOrder(ctx context.Context, acct *Account, order *Order) error {
+func (c *RealmClient) WaitLoadOrder(ctx context.Context, order *Order) error {
 	err := waitUntil(ctx, order.retryAt)
 	if err != nil {
 		return err
 	}
 
-	return c.LoadOrder(ctx, acct, order)
+	return c.LoadOrder(ctx, order)
 }
 
 // Wait for an order to finish processing. The order must be in the
 // "processing" state and the method returns once this ceases to be the case.
 // Only the URI is required to be set.
-func (c *RealmClient) WaitForOrder(ctx context.Context, acct *Account, order *Order) error {
+func (c *RealmClient) WaitForOrder(ctx context.Context, order *Order) error {
 	for {
 		if order.Status != "" && order.Status != OrderProcessing {
 			return nil
 		}
 
-		err := c.WaitLoadOrder(ctx, acct, order)
+		err := c.WaitLoadOrder(ctx, order)
 		if err != nil {
 			return err
 		}

@@ -32,6 +32,14 @@ type Problem struct {
 	Identifier *Identifier `json:"identifier,omitempty"`
 }
 
+func (p *Problem) Error() string {
+	extra := ""
+	for _, sp := range p.Subproblem {
+		extra += ";\n  " + sp.Error()
+	}
+	return fmt.Sprintf("problem of type %q (%q, %v): %v: %v%s", p.Type, p.Instance, p.Identifier, p.Title, p.Detail, extra)
+}
+
 // Represents an identifier for a resource for which authorization is required.
 type Identifier struct {
 	// The type of the identifier.
@@ -39,6 +47,10 @@ type Identifier struct {
 
 	// The identifier string. The format is determined by Type.
 	Value string `json:"value"`
+}
+
+func (id *Identifier) String() string {
+	return fmt.Sprintf("Identifier(%q, %q)", id.Type, id.Value)
 }
 
 // A type of Identifier. Currently, the only supported value is "dns".

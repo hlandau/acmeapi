@@ -25,6 +25,10 @@ func ByDirectoryURL(directoryURL string) (*Endpoint, error) {
 		if directoryURL == e.DirectoryURL {
 			return e, nil
 		}
+
+		if e.deprecatedDirectoryURLRegexp != nil && e.deprecatedDirectoryURLRegexp.MatchString(directoryURL) {
+			return e, nil
+		}
 	}
 
 	return nil, ErrNotFound

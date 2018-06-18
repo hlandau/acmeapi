@@ -42,6 +42,12 @@ type Endpoint struct {
 	// Whether the endpoint gives live certificates.
 	Live bool
 
+	// If not "", this is a regexp matching deprecated directory URLs which this
+	// endpoint supercedes. We use this to upgrade seamlessly to ACMEv2 without
+	// requiring server administrators to change their ACME directory URLs.
+	DeprecatedDirectoryURLRegexp string
+	deprecatedDirectoryURLRegexp *regexp.Regexp
+
 	initOnce sync.Once
 }
 
@@ -61,6 +67,10 @@ func (e *Endpoint) init() {
 
 		if e.CertificateURLTemplate != "" {
 			e.certificateURLTemplate = template.Must(template.New("certificate-url").Parse(e.CertificateURLTemplate))
+		}
+
+		if e.DeprecatedDirectoryURLRegexp != "" {
+			e.deprecatedDirectoryURLRegexp = regexp.MustCompile(e.DeprecatedDirectoryURLRegexp)
 		}
 	})
 }

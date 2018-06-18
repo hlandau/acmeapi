@@ -246,7 +246,8 @@ func (c *RealmClient) getDirectory(ctx context.Context) (*directoryInfo, error) 
 }
 
 func (c *RealmClient) getDirp() *directoryInfo {
-	return c.dir.Load().(*directoryInfo)
+	v, _ := c.dir.Load().(*directoryInfo)
+	return v
 }
 
 func (c *RealmClient) setDirp(d *directoryInfo) {

@@ -342,6 +342,66 @@ func (c *RealmClient) LoadCertificate(ctx context.Context, cert *Certificate) er
 	return nil
 }
 
+// This is a rather kludgy method needed for backwards compatibility with
+// old-ACME URLs. If it is not known whether an URL is to a certificate or an
+// order, this method can be used to load the URL. Returns with isCertificate
+// == true if the URL appears to address a certificate (in which case the
+// passed cert structure is populated), and isCertificate == false if the URL
+// appears to address an order (in which case the passed order structure is
+// populated). If the URL does not appear to address either type of resource,
+// an error is returned.
+func (c *RealmClient) LoadOrderOrCertificate(ctx context.Context, url string, order *Order, cert *Certificate) (isCertificate bool, err error) {
+	// Check input.
+	if !ValidURL(url) {
+		err = fmt.Errorf("invalid request URL: %q", url)
+		return
+	}
+
+	// Make request.
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Accept", "application/json, application/pem-certificate-chain")
+
+	res, err := c.doReqServer(ctx, req)
+	if err != nil {
+		return
+	}
+
+	defer res.Body.Close()
+	ct := res.Header.Get("Content-Type")
+
+	switch ct {
+	case "application/json":
+		order.URL = url
+		err = json.NewDecoder(res.Body).Decode(order)
+		if err != nil {
+			return
+		}
+
+		err = order.validate()
+		if err != nil {
+			return
+		}
+
+		order.retryAt = retryAtDefault(res.Header, defaultPollTime)
+		return
+
+	case "application/pem-certificate-chain":
+		var b []byte
+		b, err = ioutil.ReadAll(denet.LimitReader(res.Body, 512*1024))
+		cert.URL = url
+		cert.CertificateChain, err = acmeutils.LoadCertificates(b)
+		isCertificate = true
+		return
+	}
+
+	err = fmt.Errorf("response was not an order or certificate (unexpected content type %q)", ct)
+	return
+}
+
 type finalizeReq struct {
 	// Required. The CSR to be used for issuance.
 	CSR denet.Base64up `json:"csr"`

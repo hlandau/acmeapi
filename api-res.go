@@ -212,8 +212,8 @@ func (c *RealmClient) NewAuthorization(ctx context.Context, acct *Account, ident
 
 type postOrder struct {
 	Identifiers []Identifier `json:"identifiers,omitempty"`
-	NotBefore   time.Time    `json:"notBefore,omitempty"`
-	NotAfter    time.Time    `json:"notAfter,omitempty"`
+	NotBefore   *time.Time   `json:"notBefore,omitempty"`
+	NotAfter    *time.Time   `json:"notAfter,omitempty"`
 }
 
 // Creates a new order. You must set at least the Identifiers field of Order.
@@ -227,8 +227,14 @@ func (c *RealmClient) NewOrder(ctx context.Context, acct *Account, order *Order)
 
 	po := &postOrder{
 		Identifiers: order.Identifiers,
-		NotBefore:   order.NotBefore,
-		NotAfter:    order.NotAfter,
+		NotBefore:   &order.NotBefore,
+		NotAfter:    &order.NotAfter,
+	}
+	if po.NotBefore.IsZero() {
+		po.NotBefore = nil
+	}
+	if po.NotAfter.IsZero() {
+		po.NotAfter = nil
 	}
 
 	res, err := c.doReq(ctx, "POST", di.NewOrder, acct, nil, po, order)

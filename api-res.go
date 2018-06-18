@@ -47,10 +47,10 @@ func (c *RealmClient) postAccount(ctx context.Context, acct *Account, onlyReturn
 
 	acctU := acct
 	if !updating {
-		acctU = nil
+		acctU = &noAccountNeeded
 	}
 
-	res, err := c.doReq(ctx, "POST", endp, acctU, acct.Key, postAcct, acct)
+	res, err := c.doReq(ctx, "POST", endp, acctU, acct.PrivateKey, postAcct, acct)
 	if res == nil {
 		return err
 	}

@@ -3,12 +3,13 @@ package acmeendpoints
 var (
 	// Let's Encrypt (Live v2)
 	LetsEncryptLiveV2 = Endpoint{
-		Code:                   "LetsEncryptLiveV2",
-		Title:                  "Let's Encrypt (Live v2)",
-		DirectoryURL:           "https://acme-v02.api.letsencrypt.org/directory",
-		OCSPURLRegexp:          `^http://ocsp\.int-[^.]+\.letsencrypt\.org\.?/.*$`,
-		CertificateURLRegexp:   `^https://acme-v02\.api\.letsencrypt\.org\.?/acme/cert/.*$`,
-		CertificateURLTemplate: `https://acme-v02.api.letsencrypt.org/acme/cert/{{.Certificate.SerialNumber|printf "%036x"}}`,
+		Code:                         "LetsEncryptLiveV2",
+		Title:                        "Let's Encrypt (Live v2)",
+		DirectoryURL:                 "https://acme-v02.api.letsencrypt.org/directory",
+		OCSPURLRegexp:                `^http://ocsp\.int-[^.]+\.letsencrypt\.org\.?/.*$`,
+		CertificateURLRegexp:         `^https://acme-v02\.api\.letsencrypt\.org\.?/acme/cert/.*$`,
+		CertificateURLTemplate:       `https://acme-v02.api.letsencrypt.org/acme/cert/{{.Certificate.SerialNumber|printf "%036x"}}`,
+		DeprecatedDirectoryURLRegexp: `^https://acme-v01\.api\.letsencrypt\.org/directory$`,
 		Live: true,
 	}
 

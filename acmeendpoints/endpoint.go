@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"sync"
-	"text/template"
 )
 
 // Provides information on a known ACME endpoint.
@@ -27,17 +26,6 @@ type Endpoint struct {
 	// issued by this endpoint.
 	OCSPURLRegexp string
 	ocspURLRegexp *regexp.Regexp
-
-	// If this is not "", this is a regexp which must be matched iff an URL
-	// appears to be an ACME certificate URL for this endpoint.
-	CertificateURLRegexp string
-	certificateURLRegexp *regexp.Regexp
-
-	// If this is not "", it is a Go template used to construct a certificate URL
-	// from an *x509.Certificate. The certificate is passed as variable
-	// "Certificate".
-	CertificateURLTemplate string
-	certificateURLTemplate *template.Template
 
 	// Whether the endpoint gives live certificates.
 	Live bool
@@ -61,13 +49,13 @@ func (e *Endpoint) init() {
 			e.ocspURLRegexp = regexp.MustCompile(e.OCSPURLRegexp)
 		}
 
-		if e.CertificateURLRegexp != "" {
-			e.certificateURLRegexp = regexp.MustCompile(e.CertificateURLRegexp)
-		}
+		//if e.CertificateURLRegexp != "" {
+		//	e.certificateURLRegexp = regexp.MustCompile(e.CertificateURLRegexp)
+		//}
 
-		if e.CertificateURLTemplate != "" {
-			e.certificateURLTemplate = template.Must(template.New("certificate-url").Parse(e.CertificateURLTemplate))
-		}
+		//if e.CertificateURLTemplate != "" {
+		//	e.certificateURLTemplate = template.Must(template.New("certificate-url").Parse(e.CertificateURLTemplate))
+		//}
 
 		if e.DeprecatedDirectoryURLRegexp != "" {
 			e.deprecatedDirectoryURLRegexp = regexp.MustCompile(e.DeprecatedDirectoryURLRegexp)

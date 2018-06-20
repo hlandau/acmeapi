@@ -12,6 +12,11 @@ var reHostname = regexp.MustCompilePOSIX(`^([a-z0-9_-]+\.)*[a-z0-9_-]+$`)
 // Normalizes the hostname given. If the hostname is not valid, returns "" and
 // an error.
 func NormalizeHostname(name string) (string, error) {
+	isWildcard := strings.HasPrefix(name, "*.")
+	if isWildcard {
+		name = name[2:]
+	}
+
 	name = strings.TrimSuffix(strings.ToLower(name), ".")
 
 	name, err := idna.ToASCII(name)
@@ -21,6 +26,10 @@ func NormalizeHostname(name string) (string, error) {
 
 	if !reHostname.MatchString(name) {
 		return "", fmt.Errorf("invalid hostname: %#v", name)
+	}
+
+	if isWildcard {
+		name = "*." + name
 	}
 
 	return name, nil

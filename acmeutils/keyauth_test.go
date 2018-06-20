@@ -37,7 +37,7 @@ func TestKeyAuthorization(t *testing.T) {
 	}
 
 	if ka != "efdLQjp7LK3TpMZ4b5UsX-vVaexjtxTNfn1M3Shfqjo" {
-		t.Fatalf("#v", ka)
+		t.Fatalf("%v", ka)
 	}
 
 	hostname, err := TLSSNIHostname(pk, "foo")

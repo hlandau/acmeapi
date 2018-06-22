@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 	"gopkg.in/square/go-jose.v2"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -428,18 +429,36 @@ func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Accou
 	if responseData != nil {
 		defer res.Body.Close()
 
-		if ct := res.Header.Get("Content-Type"); ct != "application/json" {
-			return res, fmt.Errorf("unexpected response content type: %q", ct)
+		mimeType, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
+		if err != nil {
+			return res, err
+		}
+
+		err = validateContentType(mimeType, params, "application/json")
+		if err != nil {
+			return res, err
 		}
 
 		err = json.NewDecoder(res.Body).Decode(responseData)
 		if err != nil {
-			return nil, err
+			return res, err
 		}
 	}
 
 	// Done.
 	return res, nil
+}
+
+func validateContentType(mimeType string, params map[string]string, expectedMimeType string) error {
+	if mimeType != expectedMimeType {
+		return fmt.Errorf("unexpected response content type: %q", mimeType)
+	}
+
+	if ch, ok := params["charset"]; ok && ch != "" && strings.ToLower(ch) != "utf-8" {
+		return fmt.Errorf("content type charset is not UTF-8: %q, %q", mimeType, ch)
+	}
+
+	return nil
 }
 
 // Make an HTTP request to an ACME endpoint.

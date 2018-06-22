@@ -9,6 +9,7 @@ import (
 	"github.com/hlandau/acmeapi/acmeutils"
 	denet "github.com/hlandau/goutils/net"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"time"
 )
@@ -371,9 +372,17 @@ func (c *RealmClient) LoadOrderOrCertificate(ctx context.Context, url string, or
 	}
 
 	defer res.Body.Close()
-	ct := res.Header.Get("Content-Type")
+	mimeType, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
+	if err != nil {
+		return
+	}
 
-	switch ct {
+	err = validateContentType(mimeType, params, mimeType) // check params only
+	if err != nil {
+		return
+	}
+
+	switch mimeType {
 	case "application/json":
 		order.URL = url
 		err = json.NewDecoder(res.Body).Decode(order)
@@ -398,7 +407,7 @@ func (c *RealmClient) LoadOrderOrCertificate(ctx context.Context, url string, or
 		return
 	}
 
-	err = fmt.Errorf("response was not an order or certificate (unexpected content type %q)", ct)
+	err = fmt.Errorf("response was not an order or certificate (unexpected content type %q)", mimeType)
 	return
 }
 

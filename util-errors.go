@@ -5,6 +5,7 @@ import (
 	"fmt"
 	denet "github.com/hlandau/goutils/net"
 	"io/ioutil"
+	"mime"
 	"net/http"
 )
 
@@ -47,7 +48,8 @@ func newHTTPError(res *http.Response) error {
 		Res: res,
 	}
 
-	if res.Header.Get("Content-Type") == "application/problem+json" {
+	mimeType, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
+	if err == nil && validateContentType(mimeType, params, "application/problem+json") == nil {
 		b, err := ioutil.ReadAll(denet.LimitReader(res.Body, 512*1024))
 		if err == nil {
 			he.ProblemRaw = b

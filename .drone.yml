@@ -2,6 +2,7 @@ pipeline:
   test:
     image: golang:latest
     commands:
+      - export GOPATH=/drone
       - go get
       - go install
       - go test

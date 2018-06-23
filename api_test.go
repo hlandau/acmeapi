@@ -8,84 +8,11 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
-	"flag"
 	"git.devever.net/hlandau/acmeapi/pebbletest"
-	"os"
 	"testing"
 )
 
-/*var pebbleCmd *exec.Cmd
-var httpClient *http.Client
-
-type writerFunc func(p []byte) (n int, err error)
-
-func (wf writerFunc) Write(p []byte) (n int, err error) {
-	return wf(p)
-}
-
-func initPebble(t *testing.T) {
-	if pebbleCmd != nil {
-		return
-	}
-
-	httpTransport := *http.DefaultTransport.(*http.Transport)
-	httpTransport.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	httpClient = &http.Client{
-		Transport: &httpTransport,
-	}
-
-	os.Setenv("PEBBLE_WFE_NONCEREJECT", "80")
-
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		t.Fatalf("No $GOPATH set; in order to run the acmeapi test suite, please set $GOPATH and run `go get github.com/letsencrypt/pebble/cmd/pebble`.")
-	}
-
-	pebblePath := filepath.Join(gopath, "bin/pebble")
-	_, err := os.Stat(pebblePath)
-	if err != nil {
-		t.Fatalf("Could not stat %q (%v); in order to run the acmeapi test suite, `pebble` must be installed in $GOPATH/bin. Please run `go get github.com/letsencrypt/pebble/cmd/pebble`.", pebblePath, err)
-	}
-
-	listening := false
-	listenChan := make(chan struct{})
-	cmd := exec.Command(pebblePath, "-strict")
-	cmd.Dir = filepath.Join(gopath, "src/github.com/letsencrypt/pebble")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = writerFunc(func(p []byte) (n int, err error) {
-		n, err = os.Stdout.Write(p)
-		if bytes.Index(p, []byte("listening on:")) >= 0 && !listening {
-			close(listenChan)
-			listening = true
-		}
-		return
-	})
-	err = cmd.Start()
-	if err != nil {
-		t.Fatalf("could not start pebble: %v", err)
-	}
-
-	<-listenChan
-	pebbleCmd = cmd
-}*/
-
-func testMain(m *testing.M) int {
-	flag.Parse()
-
-	return pebbletest.With(func() int {
-		return m.Run()
-	})
-}
-
-func TestMain(m *testing.M) {
-	os.Exit(testMain(m))
-}
-
 func TestRealmClient(t *testing.T) {
-	pebbletest.Init(t)
-
 	rc, err := NewRealmClient(RealmClientConfig{
 		DirectoryURL: "https://localhost:14000/dir",
 		HTTPClient:   pebbletest.HTTPClient,

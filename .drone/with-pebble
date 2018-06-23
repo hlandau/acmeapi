@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PEBBLE_WFE_NONCEREJECT=80
+
+[[ -z "$GOPATH" ]] && {
+  echo >&2 'with-pebble: must have a $GOPATH set.'
+  exit 1
+}
+
+[[ -x "$GOPATH/bin/pebble" ]] || {
+  echo >&2 'with-pebble: must have $GOPATH/bin/pebble installed (from github.com/letsencrypt/pebble/cmd/pebble).'
+  exit 1
+}
+
+OLD_PWD="$(pwd)"
+
+cd "$GOPATH/src/github.com/letsencrypt/pebble"
+echo > pebble.log
+"$GOPATH/bin/pebble" -strict &> pebble.log &
+PEBBLE_PID=$!
+
+function cleanup {
+  echo "with-pebble: killing $PEBBLE_PID"
+  kill "$PEBBLE_PID"
+}
+trap cleanup EXIT
+
+echo "with-pebble: waiting for pebble (${PEBBLE_PID}) to come up..."
+while ((1)); do
+  kill -0 "$PEBBLE_PID" || exit 1
+  grep -q 'listening on: ' pebble.log && break
+  sleep 1
+done
+echo with-pebble: up
+
+cd "$OLD_PWD"
+
+time "$@"

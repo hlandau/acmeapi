@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	denet "github.com/hlandau/goutils/net"
+	denet "git.devever.net/hlandau/goutils/net"
 	"golang.org/x/crypto/ocsp"
 	"io/ioutil"
 	"net/http"

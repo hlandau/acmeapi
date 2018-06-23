@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hlandau/goutils/clock"
+	"git.devever.net/hlandau/goutils/clock"
 )
 
 var defaultClock = clock.Real

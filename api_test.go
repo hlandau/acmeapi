@@ -1,25 +1,20 @@
-// +build ig
+// +build integration
 
 package acmeapi
 
 import (
-	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/tls"
 	"encoding/json"
 	"flag"
-	"net/http"
+	"git.devever.net/hlandau/acmeapi/pebbletest"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"syscall"
 	"testing"
 )
 
-var pebbleCmd *exec.Cmd
+/*var pebbleCmd *exec.Cmd
 var httpClient *http.Client
 
 type writerFunc func(p []byte) (n int, err error)
@@ -74,20 +69,14 @@ func initPebble(t *testing.T) {
 
 	<-listenChan
 	pebbleCmd = cmd
-}
+}*/
 
 func testMain(m *testing.M) int {
-	//TestingAllowHTTP = true
 	flag.Parse()
 
-	defer func() {
-		if pebbleCmd != nil {
-			pebbleCmd.Process.Signal(syscall.SIGINT)
-			pebbleCmd.Wait()
-		}
-	}()
-
-	return m.Run()
+	return pebbletest.With(func() int {
+		return m.Run()
+	})
 }
 
 func TestMain(m *testing.M) {
@@ -95,11 +84,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestRealmClient(t *testing.T) {
-	initPebble(t)
+	pebbletest.Init(t)
 
 	rc, err := NewRealmClient(RealmClientConfig{
 		DirectoryURL: "https://localhost:14000/dir",
-		HTTPClient:   httpClient,
+		HTTPClient:   pebbletest.HTTPClient,
 	})
 	if err != nil {
 		t.Fatalf("couldn't instantiate realm client: %v", err)
@@ -210,7 +199,7 @@ func TestRealmClient(t *testing.T) {
 
 	// Test loading a resource where the directory URL is unknown.
 	rc2, err := NewRealmClient(RealmClientConfig{
-		HTTPClient: httpClient,
+		HTTPClient: pebbletest.HTTPClient,
 	})
 	if err != nil {
 		t.Fatalf("couldn't instantiate second realm client: %v", err)

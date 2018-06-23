@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	gnet "github.com/hlandau/goutils/net"
 	"github.com/hlandau/xlog"
 	"github.com/peterhellberg/link"
 	"golang.org/x/net/context/ctxhttp"
@@ -23,6 +24,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 var log, Log = xlog.NewQuiet("acmeapi")
@@ -336,7 +338,35 @@ func (c *RealmClient) obtainNewNonce(ctx context.Context) error {
 // The HTTP response structure is returned; the state of the Body stream is undefined,
 // but need not be manually closed if err is non-nil or if responseData is non-nil.
 func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Account, key crypto.PrivateKey, requestData, responseData interface{}) (*http.Response, error) {
+	backoff := gnet.Backoff{
+		MaxTries:           20,
+		InitialDelay:       100 * time.Millisecond,
+		MaxDelay:           1 * time.Second,
+		MaxDelayAfterTries: 4,
+		Jitter:             0.10,
+	}
 
+	for {
+		res, err := c.doReqOneTry(ctx, method, url, acct, key, requestData, responseData)
+		if err == nil {
+			return res, nil
+		}
+
+		// If the error is specifically a "bad nonce" error, we are supposed to
+		// retry.
+		if he, ok := err.(*HTTPError); ok && he.Problem != nil && he.Problem.Type == "urn:ietf:params:acme:error:badNonce" {
+			if backoff.Sleep() {
+				fmt.Printf("retrying after bad nonce: %v\n", he)
+				continue
+			}
+		}
+
+		// Other error, return.
+		return res, err
+	}
+}
+
+func (c *RealmClient) doReqOneTry(ctx context.Context, method, url string, acct *Account, key crypto.PrivateKey, requestData, responseData interface{}) (*http.Response, error) {
 	// Check input.
 	if !ValidURL(url) {
 		return nil, fmt.Errorf("invalid request URL: %q", url)

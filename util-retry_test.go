@@ -1,8 +1,8 @@
 package acmeapi
 
 import (
+	"context"
 	"github.com/hlandau/goutils/clock"
-	"golang.org/x/net/context"
 	"net/http"
 	"testing"
 	"time"

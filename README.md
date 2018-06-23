@@ -1,9 +1,9 @@
 acmeapi
 =======
 
-WORK IN PROGRESS.
+This is an ACMEv2 protocol client library written in Go.
 
-This is an ACME protocol client library written in Go.
+[Godoc.](https://godoc.org/git.devever.net/hlandau/acmeapi)
 
 It targets the final version of the ACME specification.
 

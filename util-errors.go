@@ -28,7 +28,7 @@ type HTTPError struct {
 
 // Summarises the response status, headers, and the JSON problem body if available.
 func (he *HTTPError) Error() string {
-	return fmt.Sprintf("HTTP error: %v\n%v\n%v", he.Res.Status, he.Res.Header, he.ProblemRaw)
+	return fmt.Sprintf("HTTP error: %v\n%v", he.Res.Status, he.Problem)
 }
 
 func (he *HTTPError) Temporary() bool {

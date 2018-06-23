@@ -79,6 +79,7 @@ func Visit(f func(p *Endpoint) error) error {
 
 // Register a new endpoint.
 func RegisterEndpoint(p *Endpoint) {
+	p.init()
 	endpoints = append(endpoints, p)
 }
 

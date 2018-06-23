@@ -10,7 +10,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"gopkg.in/square/go-jose.v1"
 	"math/big"
 	"time"
@@ -90,30 +89,6 @@ func CreateTLSSNICertificate(hostname string) (certDER []byte, privateKey crypto
 	certDER, err = x509.CreateCertificate(rand.Reader, &crt, &crt, &pk.PublicKey, pk)
 	privateKey = pk
 	return
-}
-
-// NOCOMMIT
-// Returns JSON suitable as a generic challenge initiation response to the ACME
-// server. You pass this to RespondToChallenge as a json.RawMessage. Suitable
-// for most, but not all, challenge types.
-func ChallengeResponseJSON(accountKey interface{}, token, challengeType string) ([]byte, error) {
-	ka, err := KeyAuthorization(accountKey, token)
-	if err != nil {
-		return nil, err
-	}
-
-	info := map[string]interface{}{
-		"resource":         "challenge",
-		"type":             challengeType,
-		"keyAuthorization": ka,
-	}
-
-	bb, err := json.Marshal(&info)
-	if err != nil {
-		return nil, err
-	}
-
-	return bb, nil
 }
 
 func sha256Bytes(b []byte) []byte {

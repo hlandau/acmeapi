@@ -326,8 +326,14 @@ func (c *RealmClient) LoadCertificate(ctx context.Context, cert *Certificate) er
 	}
 
 	defer res.Body.Close()
-	if res.Header.Get("Content-Type") != "application/pem-certificate-chain" {
-		return fmt.Errorf("response was not a PEM certificate chain")
+	mimeType, params, err := mime.ParseMediaType(res.Header.Get("Content-Type"))
+	if err != nil {
+		return err
+	}
+
+	err = validateContentType(mimeType, params, "application/pem-certificate-chain")
+	if err != nil {
+		return err
 	}
 
 	b, err := ioutil.ReadAll(denet.LimitReader(res.Body, 512*1024))

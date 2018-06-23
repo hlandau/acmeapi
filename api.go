@@ -356,7 +356,7 @@ func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Accou
 		// retry.
 		if he, ok := err.(*HTTPError); ok && he.Problem != nil && he.Problem.Type == "urn:ietf:params:acme:error:badNonce" {
 			if backoff.Sleep() {
-				fmt.Printf("retrying after bad nonce: %v\n", he)
+				log.Debugf("retrying after bad nonce: %v\n", he)
 				continue
 			}
 		}

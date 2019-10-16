@@ -1,7 +1,7 @@
 package acmeendpoints
 
 import (
-	"git.devever.net/hlandau/acmeapi/acmeutils"
+	"github.com/hlandau/acmeapi/acmeutils"
 	"testing"
 )
 

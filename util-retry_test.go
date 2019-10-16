@@ -2,7 +2,7 @@ package acmeapi
 
 import (
 	"context"
-	"git.devever.net/hlandau/goutils/clock"
+	"github.com/hlandau/goutils/clock"
 	"net/http"
 	"testing"
 	"time"

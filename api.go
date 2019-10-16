@@ -1,7 +1,7 @@
 // Package acmeapi provides an API for accessing ACME servers.
 //
 // See type RealmClient for introductory documentation.
-package acmeapi // import "git.devever.net/hlandau/acmeapi"
+package acmeapi // import "github.com/hlandau/acmeapi"
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	gnet "git.devever.net/hlandau/goutils/net"
-	"git.devever.net/hlandau/xlog"
+	gnet "github.com/hlandau/goutils/net"
+	"github.com/hlandau/xlog"
 	"github.com/peterhellberg/link"
 	"golang.org/x/net/context/ctxhttp"
 	"gopkg.in/square/go-jose.v2"

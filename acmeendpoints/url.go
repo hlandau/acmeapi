@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"git.devever.net/hlandau/xlog"
+	"github.com/hlandau/xlog"
 )
 
 var log, Log = xlog.New("acme.endpoints")

@@ -3,7 +3,7 @@ package acmeapi
 import (
 	"encoding/json"
 	"fmt"
-	denet "git.devever.net/hlandau/goutils/net"
+	denet "github.com/hlandau/goutils/net"
 	"io/ioutil"
 	"mime"
 	"net/http"

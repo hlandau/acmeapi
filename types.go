@@ -35,9 +35,9 @@ type Problem struct {
 func (p *Problem) Error() string {
 	extra := ""
 	for _, sp := range p.Subproblem {
-		extra += ";\n  " + sp.Error()
+		extra += "\n  (subproblem " + sp.Error() + ")"
 	}
-	return fmt.Sprintf("problem of type %q (%q, %v): %v: %v%s", p.Type, p.Instance, p.Identifier, p.Title, p.Detail, extra)
+	return fmt.Sprintf("(problem (type %q) (instance %q) (id %v) (title %q): (detail %q)%s)", p.Type, p.Instance, p.Identifier, p.Title, p.Detail, extra)
 }
 
 // Represents an identifier for a resource for which authorization is required.

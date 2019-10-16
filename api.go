@@ -577,5 +577,5 @@ func formUserAgent(userAgent string) string {
 		userAgent += " "
 	}
 
-	return fmt.Sprintf("%sacmeapi/2 Go-http-client/1.1 %s/%s", userAgent, runtime.GOOS, runtime.GOARCH)
+	return fmt.Sprintf("%sacmeapi/2a Go-http-client/1.1 %s/%s", userAgent, runtime.GOOS, runtime.GOARCH)
 }

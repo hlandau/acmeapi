@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hlandau/acmeapi/acmeutils"
 	denet "github.com/hlandau/goutils/net"
+	"gopkg.in/hlandau/acmeapi.v2/acmeutils"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -135,7 +135,8 @@ const defaultPollTime = 10 * time.Second
 // You can load an authorization from only the URI by creating an Authorization
 // with the URI set and then calling this method.
 func (c *RealmClient) LoadAuthorization(ctx context.Context, acct *Account, az *Authorization) error {
-	res, err := c.doReq(ctx, "GET", az.URL, acct, nil, nil, az)
+	// POST-as-GET.
+	res, err := c.doReq(ctx, "POST", az.URL, acct, nil, "", az)
 	if err != nil {
 		return err
 	}
@@ -261,8 +262,9 @@ func (c *RealmClient) NewOrder(ctx context.Context, acct *Account, order *Order)
 //
 // You can load an order from its URI by creating an Order with the URI set and
 // then calling this.
-func (c *RealmClient) LoadOrder(ctx context.Context, order *Order) error {
-	res, err := c.doReq(ctx, "GET", order.URL, nil, nil, nil, order)
+func (c *RealmClient) LoadOrder(ctx context.Context, acct *Account, order *Order) error {
+	// POST-as-GET.
+	res, err := c.doReq(ctx, "POST", order.URL, acct, nil, "", order)
 	if err != nil {
 		return err
 	}
@@ -281,46 +283,39 @@ func (c *RealmClient) LoadOrder(ctx context.Context, order *Order) error {
 //
 // The retry delay will not work if you recreate the object; use the same Challenge
 // struct between calls.
-func (c *RealmClient) WaitLoadOrder(ctx context.Context, order *Order) error {
+func (c *RealmClient) WaitLoadOrder(ctx context.Context, acct *Account, order *Order) error {
 	err := waitUntil(ctx, order.retryAt)
 	if err != nil {
 		return err
 	}
 
-	return c.LoadOrder(ctx, order)
+	return c.LoadOrder(ctx, acct, order)
 }
 
 // Wait for an order to finish processing. The order must be in the
 // "processing" state and the method returns once this ceases to be the case.
 // Only the URI is required to be set.
-func (c *RealmClient) WaitForOrder(ctx context.Context, order *Order) error {
+func (c *RealmClient) WaitForOrder(ctx context.Context, acct *Account, order *Order) error {
 	for {
 		if order.Status != "" && order.Status != OrderProcessing {
 			return nil
 		}
 
-		err := c.WaitLoadOrder(ctx, order)
+		err := c.WaitLoadOrder(ctx, acct, order)
 		if err != nil {
 			return err
 		}
 	}
 }
 
-func (c *RealmClient) LoadCertificate(ctx context.Context, cert *Certificate) error {
+func (c *RealmClient) LoadCertificate(ctx context.Context, acct *Account, cert *Certificate) error {
 	// Check input.
 	if !ValidURL(cert.URL) {
 		return fmt.Errorf("invalid request URL: %q", cert.URL)
 	}
 
 	// Make request.
-	req, err := http.NewRequest("GET", cert.URL, nil)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Accept", "application/pem-certificate-chain")
-
-	res, err := c.doReqServer(ctx, req)
+	res, err := c.doReqAccept(ctx, "POST", cert.URL, "application/pem-certificate-chain", acct, nil, "", nil)
 	if err != nil {
 		return err
 	}
@@ -357,7 +352,7 @@ func (c *RealmClient) LoadCertificate(ctx context.Context, cert *Certificate) er
 // appears to address an order (in which case the passed order structure is
 // populated). If the URL does not appear to address either type of resource,
 // an error is returned.
-func (c *RealmClient) LoadOrderOrCertificate(ctx context.Context, url string, order *Order, cert *Certificate) (isCertificate bool, err error) {
+func (c *RealmClient) LoadOrderOrCertificate(ctx context.Context, url string, acct *Account, order *Order, cert *Certificate) (isCertificate bool, err error) {
 	// Check input.
 	if !ValidURL(url) {
 		err = fmt.Errorf("invalid request URL: %q", url)
@@ -365,14 +360,7 @@ func (c *RealmClient) LoadOrderOrCertificate(ctx context.Context, url string, or
 	}
 
 	// Make request.
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return
-	}
-
-	req.Header.Set("Accept", "application/json, application/pem-certificate-chain")
-
-	res, err := c.doReqServer(ctx, req)
+	res, err := c.doReqAccept(ctx, "POST", url, "application/json, application/pem-certificate-chain", acct, nil, "", nil)
 	if err != nil {
 		return
 	}

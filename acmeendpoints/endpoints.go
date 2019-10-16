@@ -8,7 +8,7 @@ var (
 		DirectoryURL:                 "https://acme-v02.api.letsencrypt.org/directory",
 		OCSPURLRegexp:                `^http://ocsp\.int-[^.]+\.letsencrypt\.org\.?/.*$`,
 		DeprecatedDirectoryURLRegexp: `^https://acme-v01\.api\.letsencrypt\.org/directory$`,
-		Live: true,
+		Live:                         true,
 	}
 
 	// Let's Encrypt (Staging v2)

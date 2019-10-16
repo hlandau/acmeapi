@@ -1,7 +1,7 @@
 // Package acmeapi provides an API for accessing ACME servers.
 //
 // See type RealmClient for introductory documentation.
-package acmeapi // import "github.com/hlandau/acmeapi"
+package acmeapi // import "gopkg.in/hlandau/acmeapi.v2"
 
 import (
 	"context"
@@ -338,6 +338,10 @@ func (c *RealmClient) obtainNewNonce(ctx context.Context) error {
 // The HTTP response structure is returned; the state of the Body stream is undefined,
 // but need not be manually closed if err is non-nil or if responseData is non-nil.
 func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Account, key crypto.PrivateKey, requestData, responseData interface{}) (*http.Response, error) {
+	return c.doReqAccept(ctx, method, url, "application/json", acct, key, requestData, responseData)
+}
+
+func (c *RealmClient) doReqAccept(ctx context.Context, method, url, accepts string, acct *Account, key crypto.PrivateKey, requestData, responseData interface{}) (*http.Response, error) {
 	backoff := gnet.Backoff{
 		MaxTries:           20,
 		InitialDelay:       100 * time.Millisecond,
@@ -347,7 +351,7 @@ func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Accou
 	}
 
 	for {
-		res, err := c.doReqOneTry(ctx, method, url, acct, key, requestData, responseData)
+		res, err := c.doReqOneTry(ctx, method, url, accepts, acct, key, requestData, responseData)
 		if err == nil {
 			return res, nil
 		}
@@ -366,7 +370,7 @@ func (c *RealmClient) doReq(ctx context.Context, method, url string, acct *Accou
 	}
 }
 
-func (c *RealmClient) doReqOneTry(ctx context.Context, method, url string, acct *Account, key crypto.PrivateKey, requestData, responseData interface{}) (*http.Response, error) {
+func (c *RealmClient) doReqOneTry(ctx context.Context, method, url, accepts string, acct *Account, key crypto.PrivateKey, requestData, responseData interface{}) (*http.Response, error) {
 	// Check input.
 	if !ValidURL(url) {
 		return nil, fmt.Errorf("invalid request URL: %q", url)
@@ -387,9 +391,15 @@ func (c *RealmClient) doReqOneTry(ctx context.Context, method, url string, acct 
 			return nil, fmt.Errorf("account key must be specified")
 		}
 
-		b, err := json.Marshal(requestData)
-		if err != nil {
-			return nil, err
+		var b []byte
+		var err error
+		if s, ok := requestData.(string); ok && s == "" {
+			b = []byte{}
+		} else {
+			b, err = json.Marshal(requestData)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		kalg, err := algorithmFromKey(key)
@@ -444,7 +454,7 @@ func (c *RealmClient) doReqOneTry(ctx context.Context, method, url string, acct 
 		return nil, err
 	}
 
-	req.Header.Set("Accept", "application/jose+json")
+	req.Header.Set("Accept", accepts)
 	if method != "GET" && method != "HEAD" {
 		req.Header.Set("Content-Type", "application/jose+json")
 	}

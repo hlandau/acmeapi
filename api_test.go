@@ -8,7 +8,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
-	"github.com/hlandau/acmeapi/pebbletest"
+	"gopkg.in/hlandau/acmeapi.v2/pebbletest"
 	"testing"
 )
 

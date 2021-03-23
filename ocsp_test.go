@@ -3,8 +3,8 @@ package acmeapi
 import (
 	"context"
 	"crypto/x509"
-	"github.com/hlandau/acmeapi/acmeutils"
 	"golang.org/x/crypto/ocsp"
+	"gopkg.in/hlandau/acmeapi.v2/acmeutils"
 	"testing"
 )
 

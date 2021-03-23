@@ -3,7 +3,7 @@ acmeapi
 
 This is an ACMEv2 protocol client library written in Go.
 
-[Godoc.](https://godoc.org/git.devever.net/hlandau/acmeapi)
+[![godocs.io](https://godocs.io/gopkg.in/hlandau/acmeapi.v2?status.svg)](https://godocs.io/gopkg.in/hlandau/acmeapi.v2) [![No modules](https://www.devever.net/~hl/f/no-modules2.svg) 100% modules-free.](https://www.devever.net/~hl/gomod)
 
 It targets the final version of the ACME specification.
 
